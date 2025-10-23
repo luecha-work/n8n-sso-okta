@@ -11,6 +11,26 @@ When the header is present and matches an existing n8n user, the hook issues the
 - If the forward-auth header is set and matches an invited user, the normal `n8n-auth` cookie is generated via `issueCookie`.
 - Errors (missing header, unknown users) fall back to the standard n8n authentication flow.
 
+## Authentication flow
+
+- **Authelia** verifies credentials and sets the `authelia_session` cookie scoped to `*.localtest.me`.
+- **Nginx** terminates TLS, calls Authelia through `auth_request`, and forwards the trusted headers (`Remote-Email`, `Remote-User`, `Remote-Groups`, `Remote-Name`) to n8n.
+- **n8n (hook)** reads the trusted header, looks up the user by email, and issues the usual `n8n-auth` cookie so the native login screen is bypassed.
+
+- **Login sequence**
+  1. A browser accesses `https://n8n.localtest.me:8443/`; Nginx checks with Authelia.
+  2. If the visitor lacks an Authelia session, Authelia redirects to `/authelia/` for first-factor authentication.
+  3. `POST /api/firstfactor` succeeds → Authelia sets `authelia_session` and redirects back.
+  4. Nginx repeats the original request, now including the trusted headers.
+  5. The hook matches `Remote-Email` to an n8n user and calls `issueCookie` to set `n8n-auth`.
+  6. n8n serves the requested page as that user.
+
+- **Logout sequence**
+  - Calling `https://n8n.localtest.me:8443/rest/logout` (triggered by n8n’s “Sign out”) clears both `n8n-auth` and `authelia_session`, so the next request is forced back through Authelia.
+
+- **Multi-user requirement**
+  - Every Authelia account must exist in n8n with the same email. Invite additional users via `Settings → Users → Invite user` or `docker exec n8n n8n user-management:invite --email alice@example.com --role member`.
+
 ## Usage
 
 1. Copy `hooks.js` into the directory that is mounted at `/home/node/.n8n/` inside your n8n container.
