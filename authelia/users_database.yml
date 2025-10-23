@@ -1,0 +1,13 @@
+users:
+  admin:
+    displayname: 'Admin'
+    password: '$argon2id$v=19$m=65536,t=3,p=4$LTnIUjvCM1rr8nFj5Lr/DA$j/dAjiyrL10lo6kwxxWr4y1Iqsyk9qxA7XgeLHQJWcY'
+    email: owner@example.com
+    groups:
+      - admins
+  alice:
+    displayname: 'Alice'
+    password: '$argon2id$v=19$m=65536,t=3,p=4$bRhBzy0N7dtbLe+gd1HkZA$7Ri8I04yNHvh0AyE75YeYU0Wf0WXL/Gcu/3GY7lHsRI'
+    email: alice@example.com
+    groups:
+      - users

@@ -1,0 +1,79 @@
+services:
+    n8n:
+        image: n8nio/n8n:1.110.1
+        container_name: n8n
+        restart: unless-stopped
+        depends_on:
+            - postgres
+        environment:
+            - N8N_HOST=n8n.localtest.me
+            - N8N_PORT=5678
+            - NODE_ENV=production
+            - EXTERNAL_HOOK_FILES=/home/node/.n8n/hooks.js
+            - N8N_FORWARD_AUTH_HEADER=Remote-Email
+            - N8N_ENCRYPTION_KEY=supersecret_encryption_key_change_me
+            - AUTHELIA_COOKIE_DOMAIN=localtest.me
+            - DB_TYPE=postgresdb
+            - DB_POSTGRESDB_HOST=postgres
+            - DB_POSTGRESDB_PORT=5432
+            - DB_POSTGRESDB_DATABASE=n8n
+            - DB_POSTGRESDB_USER=n8n
+            - DB_POSTGRESDB_PASSWORD=n8n-pass
+            - DB_POSTGRESDB_SCHEMA=public
+            - DB_POSTGRESDB_SSL_ENABLED=false
+        volumes:
+            - ./hooks.js:/home/node/.n8n/hooks.js:ro
+            - n8n-data:/home/node/.n8n
+
+    postgres:
+        image: postgres:15-alpine
+        container_name: n8n-postgres
+        restart: unless-stopped
+        environment:
+            - POSTGRES_DB=n8n
+            - POSTGRES_USER=n8n
+            - POSTGRES_PASSWORD=n8n-pass
+        volumes:
+            - postgres-data:/var/lib/postgresql/data
+        ports:
+            - "5432:5432"
+
+    authelia:
+        image: authelia/authelia:4.39.13
+        container_name: authelia
+        restart: unless-stopped
+        depends_on:
+            - redis
+        volumes:
+            - ./authelia:/config
+        environment:
+            - TZ=Asia/Bangkok
+            - AUTHELIA_UID=1000
+            - AUTHELIA_GID=1000
+
+    redis:
+        image: redis:7-alpine
+        container_name: authelia-redis
+        restart: unless-stopped
+        command: redis-server --save "" --appendonly no
+        volumes:
+            - redis-data:/data
+
+    proxy:
+        image: nginx:1.25-alpine
+        container_name: n8n-proxy
+        restart: unless-stopped
+        depends_on:
+            - authelia
+            - n8n
+        ports:
+            - "8080:8080"
+            - "8443:8443"
+        volumes:
+            - ./reverse-proxy/nginx.conf:/etc/nginx/nginx.conf:ro
+            - ./reverse-proxy/certs:/etc/nginx/certs:ro
+
+volumes:
+    n8n-data:
+    redis-data:
+    postgres-data:
