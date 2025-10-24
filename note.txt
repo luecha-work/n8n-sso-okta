@@ -2,7 +2,6 @@ https://n8n.localtest.me:8443
 
 https://n8n.localtest.me:8443/rest/logout
 
-https://n8n.localtest.me:8443/authelia/#/logout
+https://n8n.localtest.me:8443/oauth2/sign_out
 
-admin/authelia
-alice/alice-pass
+Okta users managed in the connected tenant.

@@ -43,12 +43,14 @@ module.exports = {
                         { strict: false, end: false },
                         async (req, res, next) => {
                             if (req.url.startsWith("/rest/logout")) {
+                                const cookieName =
+                                    process.env.N8N_FORWARD_AUTH_COOKIE_NAME ??
+                                    "_oauth2_proxy";
                                 const domain =
-                                    process.env.AUTHELIA_COOKIE_DOMAIN ??
                                     process.env
                                         .N8N_FORWARD_AUTH_COOKIE_DOMAIN ??
                                     "localtest.me";
-                                res.clearCookie("authelia_session", {
+                                res.clearCookie(cookieName, {
                                     domain,
                                     path: "/",
                                     sameSite: "lax",
@@ -84,7 +86,7 @@ module.exports = {
                             if (!user) {
                                 res.statusCode = 401;
                                 res.end(
-                                    `User ${email} not found, please have an admin invite the user first.`,
+                                    `User ${email} not found, please invite the user in n8n before enabling SSO.`,
                                 );
                                 return;
                             }

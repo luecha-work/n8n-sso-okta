@@ -10,9 +10,10 @@ services:
             - N8N_PORT=5678
             - NODE_ENV=production
             - EXTERNAL_HOOK_FILES=/home/node/.n8n/hooks.js
-            - N8N_FORWARD_AUTH_HEADER=Remote-Email
+            - N8N_FORWARD_AUTH_HEADER=X-Auth-Request-Email
+            - N8N_FORWARD_AUTH_COOKIE_NAME=_oauth2_proxy
+            - N8N_FORWARD_AUTH_COOKIE_DOMAIN=localtest.me
             - N8N_ENCRYPTION_KEY=supersecret_encryption_key_change_me
-            - AUTHELIA_COOKIE_DOMAIN=localtest.me
             - DB_TYPE=postgresdb
             - DB_POSTGRESDB_HOST=postgres
             - DB_POSTGRESDB_PORT=5432
@@ -38,42 +39,29 @@ services:
         ports:
             - "5432:5432"
 
-    authelia:
-        image: authelia/authelia:4.39.13
-        container_name: authelia
+    oauth2-proxy:
+        image: quay.io/oauth2-proxy/oauth2-proxy:v7.6.0
+        container_name: oauth2-proxy
         restart: unless-stopped
-        depends_on:
-            - redis
+        command: --config=/config/oauth2-proxy.cfg
         volumes:
-            - ./authelia:/config
-        environment:
-            - TZ=Asia/Bangkok
-            - AUTHELIA_UID=1000
-            - AUTHELIA_GID=1000
-
-    redis:
-        image: redis:7-alpine
-        container_name: authelia-redis
-        restart: unless-stopped
-        command: redis-server --save "" --appendonly no
-        volumes:
-            - redis-data:/data
+            - ./oauth2-proxy.cfg:/config/oauth2-proxy.cfg:ro
 
     proxy:
         image: nginx:1.25-alpine
         container_name: n8n-proxy
         restart: unless-stopped
         depends_on:
-            - authelia
             - n8n
+            - oauth2-proxy
         ports:
             - "8080:8080"
             - "8443:8443"
         volumes:
             - ./reverse-proxy/nginx.conf:/etc/nginx/nginx.conf:ro
+            - ./reverse-proxy/log_format.conf:/etc/nginx/log_format.conf:ro
             - ./reverse-proxy/certs:/etc/nginx/certs:ro
 
 volumes:
     n8n-data:
-    redis-data:
     postgres-data:
