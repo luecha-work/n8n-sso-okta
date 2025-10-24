@@ -50,6 +50,12 @@ module.exports = {
                                     process.env
                                         .N8N_FORWARD_AUTH_COOKIE_DOMAIN ??
                                     "localtest.me";
+                                res.clearCookie("n8n-auth", {
+                                    path: "/",
+                                    sameSite: "lax",
+                                    secure: true,
+                                    httpOnly: true,
+                                });
                                 res.clearCookie(cookieName, {
                                     domain,
                                     path: "/",
